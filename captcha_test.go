@@ -1,6 +1,7 @@
 package hcaptcha
 
 import (
+	"github.com/justtaldevelops/go-hcaptcha/solver/yolo"
 	"testing"
 )
 
@@ -11,7 +12,7 @@ func TestCaptcha(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
-		err = c.Solve(&YOLOSolver{Log: c.Logger()})
+		err = c.Solve(&yolo.YOLOSolver{Log: c.Logger()})
 		if err != nil {
 			c.Logger().Debug(err)
 			continue

@@ -8,6 +8,7 @@ import (
 	"github.com/justtaldevelops/go-hcaptcha/agents"
 	"github.com/justtaldevelops/go-hcaptcha/algorithm"
 	"github.com/justtaldevelops/go-hcaptcha/screen"
+	"github.com/justtaldevelops/go-hcaptcha/solver"
 	"github.com/justtaldevelops/go-hcaptcha/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
@@ -25,11 +26,12 @@ type Challenge struct {
 	url, widgetID      string
 	id, token          string
 	category, question string
-	tasks              []Task
+	tasks              []solver.Task
 	log                *logrus.Logger
 	agent              agents.Agent
 	proof              algorithm.Proof
 	top, frame         *EventRecorder
+	client             *http.Client
 }
 
 // ChallengeOptions contains special options that can be applied to new solvers.
@@ -38,16 +40,10 @@ type ChallengeOptions struct {
 	Logger *logrus.Logger
 	// Proxies is a list of proxies to use for solving.
 	Proxies []string
-}
-
-// Task is a task assigned by hCaptcha.
-type Task struct {
-	// Image is the image to represent the task.
-	Image []byte
-	// Key is the task key, used when referencing answers.
-	Key string
-	// Index is the index of the task.
-	Index int
+	// Agent is browser to simulate.
+	Agent *agents.Chrome
+	// Client is the http client to send the request
+	Client *http.Client
 }
 
 // basicChallengeOptions is a set of default options for a basic solver.
@@ -56,6 +52,9 @@ func basicChallengeOptions(options *ChallengeOptions) {
 		options.Logger = logrus.New()
 		options.Logger.Formatter = &logrus.TextFormatter{ForceColors: true}
 		options.Logger.Level = logrus.DebugLevel
+	}
+	if options.Agent == nil {
+		options.Agent = agents.NewChrome()
 	}
 }
 
@@ -74,7 +73,7 @@ func NewChallenge(url, siteKey string, opts ...ChallengeOptions) (*Challenge, er
 		url:      url,
 		log:      options.Logger,
 		widgetID: utils.WidgetID(),
-		agent:    agents.NewChrome(),
+		agent:    options.Agent,
 	}
 	c.agent.OffsetUnix(-10)
 	c.setupFrames()
@@ -94,7 +93,7 @@ func NewChallenge(url, siteKey string, opts ...ChallengeOptions) (*Challenge, er
 }
 
 // Solve solves the challenge with the provided solver.
-func (c *Challenge) Solve(solver Solver) error {
+func (c *Challenge) Solve(solver solver.Solver) error {
 	c.log.Debugf("Solving challenge with %T...", solver)
 	if len(c.token) > 0 {
 		return nil
@@ -182,7 +181,7 @@ func (c *Challenge) Solve(solver Solver) error {
 }
 
 // Tasks returns the tasks for the challenge.
-func (c *Challenge) Tasks() []Task {
+func (c *Challenge) Tasks() []solver.Task {
 	return c.tasks
 }
 
@@ -221,7 +220,7 @@ func (c *Challenge) setupFrames() {
 }
 
 // simulateMouseMovements simulates mouse movements for the hCaptcha API.
-func (c *Challenge) simulateMouseMovements(answers []Task) {
+func (c *Challenge) simulateMouseMovements(answers []solver.Task) {
 	totalPages := int(math.Max(1, float64(len(c.tasks)/utils.TilesPerPage)))
 	cursorPos := screen.Point{X: float64(utils.Between(1, 5)), Y: float64(utils.Between(300, 350))}
 
@@ -299,7 +298,7 @@ func (c *Challenge) generateMouseMovements(fromPoint, toPoint screen.Point, opts
 }
 
 // answered returns true if the task provided is in the answers slice.
-func (c *Challenge) answered(task Task, answers []Task) bool {
+func (c *Challenge) answered(task solver.Task, answers []solver.Task) bool {
 	for _, answer := range answers {
 		if answer.Key == task.Key {
 			return true
@@ -402,7 +401,7 @@ func (c *Challenge) requestCaptcha() error {
 		}
 		_ = resp.Body.Close()
 
-		c.tasks = append(c.tasks, Task{
+		c.tasks = append(c.tasks, solver.Task{
 			Image: b,
 			Key:   task.Get("task_key").String(),
 			Index: index,

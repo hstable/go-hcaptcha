@@ -1,32 +1,12 @@
-package hcaptcha
+package yolo
 
 import (
-	"strings"
-	"github.com/justtaldevelops/go-hcaptcha/utils"
+	"github.com/justtaldevelops/go-hcaptcha/solver"
 	"github.com/sirupsen/logrus"
 	"github.com/wimspaargaren/yolov3"
 	"gocv.io/x/gocv"
+	"strings"
 )
-
-// Solver is an interface to solve hCaptcha tasks.
-type Solver interface {
-	// Solve solves the hCaptcha tasks using the category, question, and the task. If it was successful,
-	// it returns true, and in all other cases, it returns false.
-	Solve(category, question string, tasks []Task) []Task
-}
-
-// GuessSolver solves hCaptcha tasks by guessing the solution.
-type GuessSolver struct{}
-
-// Solve ...
-func (s *GuessSolver) Solve(_, _ string, tasks []Task) (answers []Task) {
-	for _, task := range tasks {
-		if utils.Chance(0.5) {
-			answers = append(answers, task)
-		}
-	}
-	return answers
-}
 
 // yolo is the YOLO v3 network.
 var yolo yolov3.Net
@@ -43,7 +23,7 @@ type YOLOSolver struct {
 }
 
 // Solve ...
-func (s *YOLOSolver) Solve(category, object string, tasks []Task) []Task {
+func (s *YOLOSolver) Solve(category, object string, tasks []solver.Task) []solver.Task {
 	// Make sure the YOLO network is initialized.
 	if yolo == nil {
 		panic("yolov3 data is not in expected folders")
@@ -52,11 +32,11 @@ func (s *YOLOSolver) Solve(category, object string, tasks []Task) []Task {
 	// Make sure we can solve the challenge.
 	if category != "image_label_binary" {
 		s.Log.Debugf("cannot solve challenge with category %s", category)
-		return []Task{}
+		return []solver.Task{}
 	}
 
 	// Answer the challenge.
-	var answers []Task
+	var answers []solver.Task
 	for _, task := range tasks {
 		// Decode and detect the object.
 		frame, err := gocv.IMDecode(task.Image, gocv.IMReadColor)
