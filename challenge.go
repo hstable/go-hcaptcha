@@ -41,7 +41,7 @@ type ChallengeOptions struct {
 	// Proxies is a list of proxies to use for solving.
 	Proxies []string
 	// Agent is browser to simulate.
-	Agent *agents.Chrome
+	Agent agents.Agent
 	// Client is the http client to send the request
 	Client *http.Client
 }
