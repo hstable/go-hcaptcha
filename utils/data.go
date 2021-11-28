@@ -1,6 +1,9 @@
 package utils
 
-import "math/rand"
+import (
+	"math/rand"
+	"sync"
+)
 
 var (
 	// FrameSize is the size of the hCaptcha frame.
@@ -32,8 +35,12 @@ func WidgetID() string {
 	return string(b)
 }
 
-// init initializes the version, asset version and agent data.
-func init() {
-	updateVersion()
-	updateAssetVersion()
+var onceInitVersion sync.Once
+
+// InitVersion initializes the version, asset version and agent data.
+func InitVersion() {
+	onceInitVersion.Do(func() {
+		updateVersion()
+		updateAssetVersion()
+	})
 }

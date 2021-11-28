@@ -60,6 +60,7 @@ func basicChallengeOptions(options *ChallengeOptions) {
 
 // NewChallenge creates a new hCaptcha challenge.
 func NewChallenge(url, siteKey string, opts ...ChallengeOptions) (*Challenge, error) {
+	utils.InitVersion()
 	if len(opts) == 0 {
 		opts = append(opts, ChallengeOptions{})
 	}
