@@ -3,6 +3,7 @@ package algorithm
 import (
 	"fmt"
 	"github.com/mxschmitt/playwright-go"
+	"sync"
 )
 
 // page is used for generating the HSW.
@@ -24,10 +25,6 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	_, err = page.AddScriptTag(playwright.PageAddScriptTagOptions{Content: playwright.String(script("hsw.js"))})
-	if err != nil {
-		panic(err)
-	}
 }
 
 // HSW is one of a few proof algorithms for hCaptcha services.
@@ -38,8 +35,16 @@ func (h *HSW) Encode() string {
 	return "hsw"
 }
 
+var onceInitScript sync.Once
+
 // Prove ...
-func (h HSW) Prove(request string) (string, error) {
+func (h HSW) Prove(request string) (r string, err error) {
+	onceInitScript.Do(func() {
+		_, err = page.AddScriptTag(playwright.PageAddScriptTagOptions{Content: playwright.String(script("hsw.js"))})
+	})
+	if err != nil {
+		return "", err
+	}
 	resp, err := page.Evaluate(fmt.Sprintf(`hsw("%v")`, request))
 	if err != nil {
 		return "", err
