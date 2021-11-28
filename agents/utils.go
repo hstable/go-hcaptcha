@@ -17,7 +17,7 @@ var (
 
 // init updates the latest Chrome agent and Chrome version.
 func init() {
-	resp, err := http.Get("https://jnrbsn.github.io/user-agents/user-agents.json")
+	resp, err := http.Get("https://cdn.jsdelivr.net/gh/jnrbsn/user-agents@master/user-agents.json")
 	if err != nil {
 		panic(err)
 	}
