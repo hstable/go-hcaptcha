@@ -11,11 +11,13 @@ var page playwright.Page
 
 // init initializes Playwright for the HSW algorithm.
 func init() {
-	pw, err := playwright.Run()
+	pw, err := playwright.Run(&playwright.RunOptions{
+		Browsers: []string{"firefox"},
+	})
 	if err != nil {
 		panic(err)
 	}
-	browser, err := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
+	browser, err := pw.Firefox.Launch(playwright.BrowserTypeLaunchOptions{
 		Headless: playwright.Bool(true),
 	})
 	if err != nil {
