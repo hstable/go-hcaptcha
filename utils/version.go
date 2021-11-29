@@ -15,11 +15,13 @@ var (
 
 // Version returns the current hCaptcha version.
 func Version() string {
+	InitVersion()
 	return version
 }
 
 // AssetVersion returns the current hCaptcha asset version.
 func AssetVersion() string {
+	InitVersion()
 	return assetVersion
 }
 
